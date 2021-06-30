@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/ubi8-minimal:8.3-298
+FROM registry.access.redhat.com/ubi8-minimal:8.1-407
 
 ENV HOME=/home/developer
 
@@ -61,7 +61,7 @@ RUN rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.
     rpm -e epel-release-7-13 && \
     rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
     microdnf install -y torsocks && \
-    rpm -e epel-release-8-10.el8 && \
+    rpm -e epel-release-8-11.el8 && \
     microdnf clean all -y && \
     echo "Installed Telepresence Dependencies"
 
@@ -91,6 +91,6 @@ RUN for f in "${HOME}" "/etc/passwd" "/projects"; do \
       chmod -R g+rwX ${f}; \
     done
 
-ENTRYPOINT [ "${HOME}/entrypoint.sh" ]
+ENTRYPOINT [ "/home/developer/entrypoint.sh" ]
 WORKDIR /projects
 CMD tail -f /dev/null
