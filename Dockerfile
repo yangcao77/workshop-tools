@@ -4,17 +4,24 @@ ENV HOME=/home/developer
 
 RUN mkdir -p /projects ${HOME}
 
+# odo and oc versions have to match the ones defined in https://github.com/redhat-developer/vscode-openshift-tools/blob/master/src/tools.json
 ENV GLIBC_VERSION=2.30-r0 \
-    ODO_VERSION=v2.0.7 \
+    ODO_VERSION=v2.2.3 \
     OC_VERSION=4.7 \
     KUBECTL_VERSION=v1.20.6 \
-    TKN_VERSION=0.13.0 \
     MAVEN_VERSION=3.6.3 \
     JDK_VERSION=11 \
-    YQ_VERSION=2.4.1 \
-    ARGOCD_VERSION=v1.7.7 \
-    IKE_VERSION=0.3.0 \
     JAVA_TOOL_OPTIONS="-Djava.net.preferIPv4Stack=true"
+
+# # install oc
+# RUN curl -o- -L https://mirror.openshift.com/pub/openshift-v4/clients//ocp/stable-${OC_VERSION}/openshift-client-linux.tar.gz | tar xvz -C /usr/local/bin && \
+#     chmod +x /usr/local/bin/oc && \
+#     oc version --client
+
+# # install odo
+# RUN curl -o /usr/local/bin/odo https://mirror.openshift.com/pub/openshift-v4/clients/odo/${ODO_VERSION}/odo-linux-amd64 && \
+#     chmod +x /usr/local/bin/odo && \
+#     odo version --client
 
 RUN microdnf install -y \
         bash curl wget tar gzip java-${JDK_VERSION}-openjdk-devel git openssh which httpd python36 procps && \
@@ -28,46 +35,14 @@ RUN wget -qO- https://mirror.openshift.com/pub/openshift-v4/clients//ocp/stable-
 # install odo
 RUN wget -O /usr/local/bin/odo https://mirror.openshift.com/pub/openshift-v4/clients/odo/${ODO_VERSION}/odo-linux-amd64 && \
     chmod +x /usr/local/bin/odo && \
+    odo preference set ConsentTelemetry false && \
     odo version --client
+
 
 # install kubectl
 ADD https://storage.googleapis.com/kubernetes-release/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl /usr/local/bin/kubectl
 RUN chmod +x /usr/local/bin/kubectl && \
     kubectl version --client
-
-# install tekton
-RUN wget -qO- https://github.com/tektoncd/cli/releases/download/v${TKN_VERSION}/tkn_${TKN_VERSION}_Linux_x86_64.tar.gz | tar xvz -C /usr/local/bin && \
-    tkn version
-
-# install yq
-RUN wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_amd64 && \
-    chmod +x /usr/local/bin/yq
-
-# install argocd
-RUN wget -qO /usr/local/bin/argocd https://github.com/argoproj/argo-cd/releases/download/${ARGOCD_VERSION}/argocd-linux-amd64 && \
-    chmod +x /usr/local/bin/argocd
-
-
-# install ike + telepresence
-# install telepresence
-ENV TELEPRESENCE_VERSION=0.109
-RUN git clone https://github.com/telepresenceio/telepresence.git && \
-    cd telepresence && git checkout ${TELEPRESENCE_VERSION} &&\
-    PREFIX=/usr/local ./install.sh && \
-    echo "Installed Telepresence"
-
-RUN rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm && \
-    microdnf install -y sshfs && \
-    rpm -e epel-release-7-13 && \
-    rpm -Uvh https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm && \
-    microdnf install -y torsocks && \
-    rpm -e epel-release-8-11.el8 && \
-    microdnf clean all -y && \
-    echo "Installed Telepresence Dependencies"
-
-RUN curl -sL http://git.io/get-ike | bash -s  -- --version=v${IKE_VERSION} --dir=/usr/local/bin && \
-    echo "Installed istio-workspace" && \
-    ike version
 
 # install maven
 ENV MAVEN_HOME /usr/lib/mvn
@@ -82,7 +57,6 @@ RUN wget http://archive.apache.org/dist/maven/maven-3/${MAVEN_VERSION}/binaries/
 ENV JAVA_HOME ${GRAALVM_HOME}
 
 # Entrypoints
-ADD etc/before-start.sh ${HOME}/before-start.sh
 ADD etc/entrypoint.sh ${HOME}/entrypoint.sh
 
 # Change permissions to let any arbitrary user
